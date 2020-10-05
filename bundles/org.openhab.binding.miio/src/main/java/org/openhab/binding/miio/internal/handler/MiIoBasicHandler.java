@@ -83,6 +83,7 @@ public class MiIoBasicHandler extends MiIoAbstractHandler {
     });
 
     List<MiIoBasicChannel> refreshList = new ArrayList<>();
+    List<MiIoBasicChannel> refreshListCustomCommands = new ArrayList<>();
 
     private @Nullable MiIoBasicDevice miioDevice;
     private Map<ChannelUID, MiIoBasicChannel> actions = new HashMap<>();
@@ -97,6 +98,7 @@ public class MiIoBasicHandler extends MiIoAbstractHandler {
         hasChannelStructure = false;
         isIdentified = false;
         refreshList = new ArrayList<>();
+        refreshListCustomCommands = new ArrayList<>();
     }
 
     @Override
@@ -326,7 +328,11 @@ public class MiIoBasicHandler extends MiIoAbstractHandler {
             if (miioDevice != null) {
                 for (MiIoBasicChannel miChannel : miioDevice.getDevice().getChannels()) {
                     if (miChannel.getRefresh()) {
-                        refreshList.add(miChannel);
+                        if (miChannel.getChannelCustomRefreshCommand().isBlank()) {
+                            refreshList.add(miChannel);
+                        } else {
+                            refreshListCustomCommands.add(miChannel);
+                        }
                     }
                 }
             }
