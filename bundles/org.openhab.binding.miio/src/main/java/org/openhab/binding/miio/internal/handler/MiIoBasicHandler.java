@@ -44,7 +44,9 @@ import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.HSBType;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.PercentType;
+import org.openhab.core.library.types.QuantityType;
 import org.openhab.core.library.types.StringType;
+import org.openhab.core.library.unit.SIUnits;
 import org.openhab.core.thing.Channel;
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.Thing;
@@ -479,9 +481,10 @@ public class MiIoBasicHandler extends MiIoAbstractHandler {
             val = transformed;
         }
         try {
-            switch (basicChannel.getType().toLowerCase()) {
+            String[] chType = basicChannel.getType().toLowerCase().split(":");
+            switch (chType[0]) {
                 case "number":
-                    updateState(basicChannel.getChannel(), new DecimalType(val.getAsBigDecimal()));
+                    updateQuanityType(basicChannel, val, chType.length > 1 ? chType[1] : "");
                     break;
                 case "dimmer":
                     updateState(basicChannel.getChannel(), new PercentType(val.getAsBigDecimal()));
@@ -505,6 +508,16 @@ public class MiIoBasicHandler extends MiIoAbstractHandler {
             logger.debug("Error updating {} property {} with '{}' : {}: {}", getThing().getUID(),
                     basicChannel.getChannel(), val, e.getClass().getCanonicalName(), e.getMessage());
             logger.trace("Property update error detail:", e);
+        }
+    }
+
+    private void updateQuanityType(MiIoBasicChannel basicChannel, JsonElement val, String type) {
+        switch (type) {
+            case "temperature":
+                updateState(basicChannel.getChannel(), new QuantityType<>(val.getAsBigDecimal(), SIUnits.CELSIUS));
+                break;
+            default:
+                updateState(basicChannel.getChannel(), new DecimalType(val.getAsBigDecimal()));
         }
     }
 

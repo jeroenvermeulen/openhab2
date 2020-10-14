@@ -23,7 +23,8 @@
 				"property": "target_temperature",
 				"friendlyName": "Target Temperature",
 				"channel": "target_temperature",
-                "type": "Number",
+				"type": "Number:Temperature",
+				"channelType": "temperatureC",
 				"refresh": true,
 				"actions": [
 					{
@@ -59,13 +60,13 @@
 				]
 			},
 			{
-                "property": "relative_humidity",
-                "friendlyName": "Relative Humidity",
-                "channel": "relative_humidity",
-                "type": "Number",
-                "refresh": true,
-                "actions": []
-            },
+				"property": "relative_humidity",
+				"friendlyName": "Relative Humidity",
+				"channel": "relative_humidity",
+				"type": "Number",
+				"refresh": true,
+				"actions": []
+			},
 			{
 				"property": "child_lock",
 				"friendlyName": "Child Lock",
@@ -96,7 +97,8 @@
 				"property": "temperature",
 				"friendlyName": "Temperature",
 				"channel": "temperature",
-				"type": "Number",
+				"type": "Number:Temperature",
+				"channelType": "temperatureC",
 				"refresh": true,
 				"actions": []
 			},
