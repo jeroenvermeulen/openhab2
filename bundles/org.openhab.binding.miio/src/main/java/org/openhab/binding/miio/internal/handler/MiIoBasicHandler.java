@@ -83,7 +83,7 @@ public class MiIoBasicHandler extends MiIoAbstractHandler {
     });
 
     List<MiIoBasicChannel> refreshList = new ArrayList<>();
-    List<MiIoBasicChannel> refreshListCustomCommands = new ArrayList<>();
+    Map<String, MiIoBasicChannel> refreshListCustomCommands = new HashMap<>();
 
     private @Nullable MiIoBasicDevice miioDevice;
     private Map<ChannelUID, MiIoBasicChannel> actions = new HashMap<>();
@@ -98,7 +98,7 @@ public class MiIoBasicHandler extends MiIoAbstractHandler {
         hasChannelStructure = false;
         isIdentified = false;
         refreshList = new ArrayList<>();
-        refreshListCustomCommands = new ArrayList<>();
+        refreshListCustomCommands = new HashMap<>();
     }
 
     @Override
@@ -261,10 +261,17 @@ public class MiIoBasicHandler extends MiIoAbstractHandler {
             final MiIoBasicDevice midevice = miioDevice;
             if (midevice != null) {
                 refreshProperties(midevice);
+                refreshCustomProperties(midevice);
                 refreshNetwork();
             }
         } catch (Exception e) {
             logger.debug("Error while updating '{}': ", getThing().getUID().toString(), e);
+        }
+    }
+
+    private void refreshCustomProperties(MiIoBasicDevice midevice) {
+        for (MiIoBasicChannel miChannel : refreshListCustomCommands.values()) {
+            sendCommand(miChannel.getChannelCustomRefreshCommand());
         }
     }
 
@@ -331,7 +338,8 @@ public class MiIoBasicHandler extends MiIoAbstractHandler {
                         if (miChannel.getChannelCustomRefreshCommand().isBlank()) {
                             refreshList.add(miChannel);
                         } else {
-                            refreshListCustomCommands.add(miChannel);
+                            String i = miChannel.getChannelCustomRefreshCommand().split("\\]")[0];
+                            refreshListCustomCommands.put(i.trim(), miChannel);
                         }
                     }
                 }
@@ -404,7 +412,6 @@ public class MiIoBasicHandler extends MiIoAbstractHandler {
             return null;
         }
         ChannelUID channelUID = new ChannelUID(getThing().getUID(), channel);
-        ChannelTypeUID channelTypeUID = new ChannelTypeUID(channelType);
 
         // TODO: Need to understand if this harms anything. If yes, channel only to be added when not there already.
         // current way allows to have no issues when channels are changing.
@@ -412,9 +419,13 @@ public class MiIoBasicHandler extends MiIoAbstractHandler {
             logger.info("Channel '{}' for thing {} already exist... removing", channel, getThing().getUID());
             thingBuilder.withoutChannel(new ChannelUID(getThing().getUID(), channel));
         }
-        Channel newChannel = ChannelBuilder.create(channelUID, datatype).withType(channelTypeUID)
-                .withLabel(friendlyName).build();
-        thingBuilder.withChannel(newChannel);
+        ChannelBuilder newChannel = ChannelBuilder.create(channelUID, datatype).withLabel(friendlyName);
+        if (!channelType.isBlank()) {
+            ChannelTypeUID channelTypeUID = new ChannelTypeUID(channelType);
+            newChannel = newChannel.withType(channelTypeUID);
+            logger.debug("Channel {} has type '{}' ", channelUID, channelTypeUID);
+        }
+        thingBuilder.withChannel(newChannel.build());
         return channelUID;
     }
 
@@ -534,6 +545,20 @@ public class MiIoBasicHandler extends MiIoAbstractHandler {
                     }
                     break;
                 default:
+                    if (refreshListCustomCommands.containsKey(response.getMethod())) {
+                        logger.debug("Processing custom refresh command response for !{}", response.getMethod());
+                        MiIoBasicChannel ch = refreshListCustomCommands.get(response.getMethod());
+                        if (response.getResult().isJsonArray()) {
+                            JsonArray r = response.getResult().getAsJsonArray();
+                            if (ch.getTransfortmation() == null || ch.getTransfortmation().isBlank()) {
+                                updateChannel(ch, ch.getChannel(),
+                                        r.get(0).isJsonPrimitive() ? r.get(0) : new JsonPrimitive(r.get(0).toString()));
+                            } else {
+                                updateChannel(ch, ch.getChannel(), response.getResult().getAsJsonArray());
+
+                            }
+                        }
+                    }
                     break;
             }
         } catch (Exception e) {

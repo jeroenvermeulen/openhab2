@@ -136,7 +136,9 @@ public class MiIoBasicChannel {
     public String getChannelType() {
         final @Nullable String ct = channelType;
         if (ct == null || ct.isEmpty()) {
-            return BINDING_ID + ":" + getChannel();
+            // return BINDING_ID + ":" + getChannel();
+            return "";
+
         } else {
             return (ct.startsWith("system") ? ct : BINDING_ID + ":" + ct);
         }
